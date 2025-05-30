@@ -1,3 +1,4 @@
+/* Estiliza o corpo da página */
 body {
   margin: 0;
   padding: 0;
@@ -9,6 +10,7 @@ body {
   background-color: #f0f8ff;
 }
 
+/* Estiliza o container central */
 .container {
   text-align: center;
   background-color: #ffffff;
@@ -17,16 +19,19 @@ body {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
+/* Estiliza o título */
 h1 {
   margin-bottom: 20px;
 }
 
+/* Estiliza o número do contador */
 #contador {
   font-size: 48px;
   margin: 20px 0;
   color: #333;
 }
 
+/* Estiliza o botão */
 #botaoClique {
   padding: 12px 24px;
   font-size: 18px;
@@ -38,7 +43,7 @@ h1 {
   transition: background-color 0.3s;
 }
 
+/* Estilo quando o mouse passa por cima do botão */
 #botaoClique:hover {
   background-color: #0056b3;
 }
-
