@@ -1,32 +1,103 @@
 <!DOCTYPE html>
-<!-- Define o tipo do documento como HTML5 -->
-
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <!-- Configurações iniciais da página -->
-  <meta charset="UTF-8" />
-  <!-- Define o conjunto de caracteres -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- Responsividade para dispositivos móveis -->
-  <title>Contador de Cliques</title>
-  <!-- Título da aba -->
-  <link rel="stylesheet" href="style.css" />
-  <!-- Link para o arquivo CSS -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galactic Odyssey | A Nova Era dos Jogos Web</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <!-- Corpo da página -->
-
-  <!-- Container central com título, contador e botão -->
-  <div class="container">
-    <h1>Contador de Cliques</h1>
-    <!-- Título principal -->
-    <p id="contador">0</p>
-    <!-- Parágrafo que mostra o número de cliques -->
-    <button id="botaoClique">Clique aqui!</button>
-    <!-- Botão que será clicado -->
-  </div>
-
-  <!-- Inclusão do arquivo JavaScript -->
-  <script src="script.js"></script>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        
+        <div id="hud">
+            <div class="hud-section">
+                <div id="health-bar" class="bar">
+                    <div class="fill" style="width: 100%"></div>
+                    <span class="icon">❤️</span>
+                </div>
+                <div id="shield-bar" class="bar">
+                    <div class="fill" style="width: 100%"></div>
+                    <span class="icon">🛡️</span>
+                </div>
+            </div>
+            
+            <div class="hud-section center">
+                <div id="weapon-display">
+                    <div id="weapon-icon">🔫</div>
+                    <div id="ammo">30/120</div>
+                </div>
+                <div id="ability-cooldown"></div>
+            </div>
+            
+            <div class="hud-section">
+                <div id="mission-display">
+                    <h3>MISSÃO ATUAL</h3>
+                    <p id="mission-text">Encontre a nave abandonada</p>
+                    <div id="mission-progress">
+                        <div class="progress-bar"></div>
+                        <span>0%</span>
+                    </div>
+                </div>
+                <div id="xp-display">
+                    <div class="progress-bar"></div>
+                    <span>Nível 1 | 0/1000 XP</span>
+                </div>
+            </div>
+        </div>
+        
+        <div id="dialogue-box" class="hidden">
+            <div id="dialogue-portrait"></div>
+            <div id="dialogue-content">
+                <h3 id="dialogue-speaker">Comandante Rex</h3>
+                <p id="dialogue-text">Soldado, precisamos que você investigue aquela anomalia no setor 4.</p>
+                <div id="dialogue-options"></div>
+            </div>
+        </div>
+        
+        <div id="main-menu">
+            <div class="menu-content">
+                <h1>GALACTIC ODYSSEY</h1>
+                <div class="menu-buttons">
+                    <button id="new-game-btn" class="glow-btn">NOVA JORNADA</button>
+                    <button id="continue-btn" class="glow-btn" disabled>CONTINUAR</button>
+                    <button id="settings-btn" class="glow-btn">CONFIGURAÇÕES</button>
+                </div>
+                <div class="menu-footer">
+                    <p>Desenvolvido por <span>Cosmic Games Studio</span></p>
+                    <div class="social-icons">
+                        <span>📱</span>
+                        <span>🎮</span>
+                        <span>💻</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="pause-menu" class="hidden">
+            <div class="menu-content">
+                <h2>JOGO PAUSADO</h2>
+                <div class="menu-buttons">
+                    <button id="resume-btn" class="glow-btn">RETORNAR</button>
+                    <button id="missions-btn" class="glow-btn">MISSÕES</button>
+                    <button id="inventory-btn" class="glow-btn">INVENTÁRIO</button>
+                    <button id="quit-btn" class="glow-btn">SAIR</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="notification" class="hidden">
+            <div class="notification-icon">⚠️</div>
+            <p class="notification-text">Missão atualizada: Encontre a nave abandonada</p>
+        </div>
+        
+        <audio id="background-music" loop>
+            <source src="" type="audio/mpeg">
+            Seu navegador não suporta áudio.
+        </audio>
+    </div>
+    
+    <script src="script.js"></script>
 </body>
 </html>

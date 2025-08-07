@@ -1,13 +1,659 @@
-// Inicializa o valor do contador com 0
-let contador = 0;
+// Configurações principais do jogo
+const GameConfig = {
+    canvasWidth: window.innerWidth,
+    canvasHeight: window.innerHeight,
+    backgroundColor: '#0a0a1a',
+    debugMode: false,
+    player: {
+        speed: 5,
+        jumpForce: 15,
+        health: 100,
+        shield: 100,
+        xp: 0,
+        level: 1
+    },
+    weapons: {
+        pistol: {
+            name: "Photon Pistol",
+            damage: 25,
+            ammo: 30,
+            maxAmmo: 120,
+            fireRate: 200,
+            icon: "🔫"
+        },
+        rifle: {
+            name: "Plasma Rifle",
+            damage: 15,
+            ammo: 60,
+            maxAmmo: 240,
+            fireRate: 100,
+            icon: "💥"
+        }
+    },
+    missions: [
+        {
+            id: 1,
+            title: "Início da Jornada",
+            description: "Encontre a nave abandonada no setor 4",
+            xpReward: 200,
+            objectives: [
+                { description: "Chegar ao setor 4", completed: false },
+                { description: "Localizar a nave", completed: false },
+                { description: "Coletar dados da nave", completed: false }
+            ]
+        },
+        {
+            id: 2,
+            title: "Ameaça Alienígena",
+            description: "Elimine os invasores alienígenas",
+            xpReward: 500,
+            objectives: [
+                { description: "Derrotar 5 inimigos", completed: false, target: 5, progress: 0 },
+                { description: "Proteger a base", completed: false }
+            ]
+        }
+    ]
+};
 
-// Seleciona o botão e o elemento onde o número será exibido
-const botao = document.getElementById('botaoClique');
-const displayContador = document.getElementById('contador');
+// Estado do jogo
+const GameState = {
+    initialized: false,
+    paused: false,
+    currentMission: 0,
+    player: {
+        x: 0,
+        y: 0,
+        velocityX: 0,
+        velocityY: 0,
+        isJumping: false,
+        health: GameConfig.player.health,
+        shield: GameConfig.player.shield,
+        xp: GameConfig.player.xp,
+        level: GameConfig.player.level,
+        currentWeapon: 'pistol',
+        inventory: []
+    },
+    enemies: [],
+    projectiles: [],
+    particles: [],
+    npcs: [],
+    lastTime: 0,
+    keys: {
+        w: false,
+        a: false,
+        s: false,
+        d: false,
+        space: false,
+        shift: false
+    }
+};
 
-// Adiciona um ouvinte de evento ao botão
-// Toda vez que o botão for clicado, o contador aumenta
-botao.addEventListener('click', () => {
-  contador++; // Incrementa o contador
-  displayContador.textContent = contador; // Atualiza o texto exibido
-});
+// Elementos DOM
+const DOM = {
+    canvas: null,
+    ctx: null,
+    healthBar: null,
+    shieldBar: null,
+    weaponDisplay: null,
+    ammoDisplay: null,
+    missionDisplay: null,
+    missionText: null,
+    dialogueBox: null,
+    mainMenu: null,
+    pauseMenu: null,
+    notification: null
+};
+
+// Inicialização do jogo
+function initGame() {
+    // Configurar elementos DOM
+    DOM.canvas = document.getElementById('game-canvas');
+    DOM.ctx = DOM.canvas.getContext('2d');
+    
+    // Ajustar tamanho do canvas
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    
+    // Configurar elementos de UI
+    DOM.healthBar = document.getElementById('health-bar').querySelector('.fill');
+    DOM.shieldBar = document.getElementById('shield-bar').querySelector('.fill');
+    DOM.weaponDisplay = document.getElementById('weapon-icon');
+    DOM.ammoDisplay = document.getElementById('ammo');
+    DOM.missionDisplay = document.getElementById('mission-text');
+    DOM.dialogueBox = document.getElementById('dialogue-box');
+    DOM.mainMenu = document.getElementById('main-menu');
+    DOM.pauseMenu = document.getElementById('pause-menu');
+    DOM.notification = document.getElementById('notification');
+    
+    // Configurar eventos
+    setupEventListeners();
+    
+    // Iniciar menu principal
+    showMainMenu();
+    
+    // Carregar assets
+    loadAssets().then(() => {
+        console.log("Todos os assets foram carregados!");
+        GameState.initialized = true;
+    });
+}
+
+// Redimensionar canvas
+function resizeCanvas() {
+    DOM.canvas.width = window.innerWidth;
+    DOM.canvas.height = window.innerHeight;
+    GameConfig.canvasWidth = window.innerWidth;
+    GameConfig.canvasHeight = window.innerHeight;
+}
+
+// Configurar listeners de eventos
+function setupEventListeners() {
+    // Teclado
+    document.addEventListener('keydown', (e) => {
+        switch(e.key.toLowerCase()) {
+            case 'w': case 'arrowup': GameState.keys.w = true; break;
+            case 'a': case 'arrowleft': GameState.keys.a = true; break;
+            case 's': case 'arrowdown': GameState.keys.s = true; break;
+            case 'd': case 'arrowright': GameState.keys.d = true; break;
+            case ' ': GameState.keys.space = true; break;
+            case 'shift': GameState.keys.shift = true; break;
+            case 'escape': togglePause(); break;
+            case 'r': reloadWeapon(); break;
+            case '1': switchWeapon('pistol'); break;
+            case '2': switchWeapon('rifle'); break;
+        }
+    });
+    
+    document.addEventListener('keyup', (e) => {
+        switch(e.key.toLowerCase()) {
+            case 'w': case 'arrowup': GameState.keys.w = false; break;
+            case 'a': case 'arrowleft': GameState.keys.a = false; break;
+            case 's': case 'arrowdown': GameState.keys.s = false; break;
+            case 'd': case 'arrowright': GameState.keys.d = false; break;
+            case ' ': GameState.keys.space = false; break;
+            case 'shift': GameState.keys.shift = false; break;
+        }
+    });
+    
+    // Mouse
+    DOM.canvas.addEventListener('mousedown', (e) => {
+        if (!GameState.paused && GameState.initialized) {
+            fireWeapon(e.clientX, e.clientY);
+        }
+    });
+    
+    // Botões do menu
+    document.getElementById('new-game-btn').addEventListener('click', startNewGame);
+    document.getElementById('continue-btn').addEventListener('click', continueGame);
+    document.getElementById('settings-btn').addEventListener('click', showSettings);
+    document.getElementById('resume-btn').addEventListener('click', togglePause);
+    document.getElementById('missions-btn').addEventListener('click', showMissions);
+    document.getElementById('inventory-btn').addEventListener('click', showInventory);
+    document.getElementById('quit-btn').addEventListener('click', quitToMainMenu);
+}
+
+// Carregar assets
+async function loadAssets() {
+    // Aqui você carregaria imagens, sons, etc.
+    // Exemplo:
+    // const playerSprite = await loadImage('assets/player.png');
+    return Promise.resolve();
+}
+
+// Mostrar menu principal
+function showMainMenu() {
+    DOM.mainMenu.classList.remove('hidden');
+    // Aqui você poderia verificar se há um jogo salvo para habilitar o botão CONTINUAR
+}
+
+// Iniciar novo jogo
+function startNewGame() {
+    DOM.mainMenu.classList.add('hidden');
+    resetGameState();
+    startGameLoop();
+    startMission(0);
+    showNotification("Missão iniciada: " + GameConfig.missions[0].description);
+}
+
+// Continuar jogo salvo
+function continueGame() {
+    // Carregar estado salvo
+    DOM.mainMenu.classList.add('hidden');
+    startGameLoop();
+}
+
+// Mostrar configurações
+function showSettings() {
+    // Implementar menu de configurações
+    console.log("Configurações abertas");
+}
+
+// Alternar pausa
+function togglePause() {
+    if (!GameState.initialized) return;
+    
+    GameState.paused = !GameState.paused;
+    DOM.pauseMenu.classList.toggle('hidden');
+    
+    if (GameState.paused) {
+        // Pausar música, etc.
+    } else {
+        // Retomar música, etc.
+    }
+}
+
+// Mostrar missões
+function showMissions() {
+    // Implementar menu de missões
+    console.log("Menu de missões aberto");
+}
+
+// Mostrar inventário
+function showInventory() {
+    // Implementar menu de inventário
+    console.log("Inventário aberto");
+}
+
+// Sair para o menu principal
+function quitToMainMenu() {
+    GameState.paused = false;
+    DOM.pauseMenu.classList.add('hidden');
+    showMainMenu();
+}
+
+// Resetar estado do jogo
+function resetGameState() {
+    GameState.player = {
+        x: GameConfig.canvasWidth / 2,
+        y: GameConfig.canvasHeight / 2,
+        velocityX: 0,
+        velocityY: 0,
+        isJumping: false,
+        health: GameConfig.player.health,
+        shield: GameConfig.player.shield,
+        xp: 0,
+        level: 1,
+        currentWeapon: 'pistol',
+        inventory: []
+    };
+    
+    GameState.enemies = [];
+    GameState.projectiles = [];
+    GameState.particles = [];
+    GameState.npcs = [];
+    GameState.currentMission = 0;
+    
+    updateUI();
+}
+
+// Atualizar UI
+function updateUI() {
+    // Atualizar barras de saúde e escudo
+    DOM.healthBar.style.width = `${(GameState.player.health / GameConfig.player.health) * 100}%`;
+    DOM.shieldBar.style.width = `${(GameState.player.shield / GameConfig.player.shield) * 100}%`;
+    
+    // Atualizar arma e munição
+    const weapon = GameConfig.weapons[GameState.player.currentWeapon];
+    DOM.weaponDisplay.textContent = weapon.icon;
+    DOM.ammoDisplay.textContent = `${weapon.ammo}/${weapon.maxAmmo}`;
+    
+    // Atualizar missão
+    if (GameState.currentMission !== null) {
+        const mission = GameConfig.missions[GameState.currentMission];
+        DOM.missionDisplay.textContent = mission.description;
+    }
+}
+
+// Iniciar loop do jogo
+function startGameLoop() {
+    GameState.lastTime = performance.now();
+    requestAnimationFrame(gameLoop);
+}
+
+// Loop principal do jogo
+function gameLoop(timestamp) {
+    if (GameState.paused) return;
+    
+    const deltaTime = (timestamp - GameState.lastTime) / 1000;
+    GameState.lastTime = timestamp;
+    
+    // Limpar canvas
+    DOM.ctx.fillStyle = GameConfig.backgroundColor;
+    DOM.ctx.fillRect(0, 0, GameConfig.canvasWidth, GameConfig.canvasHeight);
+    
+    // Atualizar física
+    updatePhysics(deltaTime);
+    
+    // Atualizar entidades
+    updateEntities(deltaTime);
+    
+    // Renderizar
+    render();
+    
+    // Continuar loop
+    requestAnimationFrame(gameLoop);
+}
+
+// Atualizar física
+function updatePhysics(deltaTime) {
+    // Movimento do jogador
+    const playerSpeed = GameState.keys.shift ? GameConfig.player.speed * 1.5 : GameConfig.player.speed;
+    
+    GameState.player.velocityX = 0;
+    if (GameState.keys.a) GameState.player.velocityX = -playerSpeed;
+    if (GameState.keys.d) GameState.player.velocityX = playerSpeed;
+    
+    if (GameState.keys.w && !GameState.player.isJumping) {
+        GameState.player.velocityY = -GameConfig.player.jumpForce;
+        GameState.player.isJumping = true;
+    }
+    
+    // Aplicar gravidade
+    GameState.player.velocityY += 0.5;
+    
+    // Atualizar posição
+    GameState.player.x += GameState.player.velocityX;
+    GameState.player.y += GameState.player.velocityY;
+    
+    // Limites do canvas
+    if (GameState.player.x < 0) GameState.player.x = 0;
+    if (GameState.player.x > GameConfig.canvasWidth) GameState.player.x = GameConfig.canvasWidth;
+    if (GameState.player.y > GameConfig.canvasHeight - 50) {
+        GameState.player.y = GameConfig.canvasHeight - 50;
+        GameState.player.isJumping = false;
+        GameState.player.velocityY = 0;
+    }
+}
+
+// Atualizar entidades
+function updateEntities(deltaTime) {
+    // Atualizar projéteis
+    GameState.projectiles.forEach((proj, index) => {
+        proj.x += proj.velocityX * deltaTime * 60;
+        proj.y += proj.velocityY * deltaTime * 60;
+        
+        // Verificar se saiu da tela
+        if (proj.x < 0 || proj.x > GameConfig.canvasWidth || 
+            proj.y < 0 || proj.y > GameConfig.canvasHeight) {
+            GameState.projectiles.splice(index, 1);
+        }
+    });
+    
+    // Atualizar inimigos (IA simples)
+    GameState.enemies.forEach((enemy, index) => {
+        // Movimento em direção ao jogador
+        const dx = GameState.player.x - enemy.x;
+        const dy = GameState.player.y - enemy.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance > 200) {
+            enemy.x += (dx / distance) * enemy.speed * deltaTime * 60;
+            enemy.y += (dy / distance) * enemy.speed * deltaTime * 60;
+        }
+        
+        // Verificar colisão com projéteis
+        GameState.projectiles.forEach((proj, projIndex) => {
+            const projDx = proj.x - enemy.x;
+            const projDy = proj.y - enemy.y;
+            const projDist = Math.sqrt(projDx * projDx + projDy * projDy);
+            
+            if (projDist < 30) { // Raio de colisão
+                enemy.health -= proj.damage;
+                GameState.projectiles.splice(projIndex, 1);
+                
+                // Criar efeito de partícula
+                createParticles(enemy.x, enemy.y, 5, 'red');
+                
+                if (enemy.health <= 0) {
+                    GameState.enemies.splice(index, 1);
+                    createParticles(enemy.x, enemy.y, 20, 'orange');
+                    
+                    // Atualizar missão se necessário
+                    updateMissionProgress('enemyDefeated');
+                }
+            }
+        });
+    });
+    
+    // Atualizar partículas
+    GameState.particles.forEach((part, index) => {
+        part.x += part.velocityX;
+        part.y += part.velocityY;
+        part.lifetime--;
+        
+        if (part.lifetime <= 0) {
+            GameState.particles.splice(index, 1);
+        }
+    });
+}
+
+// Renderizar cena
+function render() {
+    // Desenhar terreno (simplificado)
+    DOM.ctx.fillStyle = '#2a2a4a';
+    DOM.ctx.fillRect(0, GameConfig.canvasHeight - 50, GameConfig.canvasWidth, 50);
+    
+    // Desenhar jogador (simplificado)
+    DOM.ctx.fillStyle = '#00a8ff';
+    DOM.ctx.beginPath();
+    DOM.ctx.arc(GameState.player.x, GameState.player.y, 20, 0, Math.PI * 2);
+    DOM.ctx.fill();
+    
+    // Desenhar inimigos
+    GameState.enemies.forEach(enemy => {
+        DOM.ctx.fillStyle = '#ff4757';
+        DOM.ctx.beginPath();
+        DOM.ctx.arc(enemy.x, enemy.y, 20, 0, Math.PI * 2);
+        DOM.ctx.fill();
+        
+        // Barra de saúde
+        DOM.ctx.fillStyle = 'red';
+        DOM.ctx.fillRect(enemy.x - 20, enemy.y - 30, 40, 5);
+        DOM.ctx.fillStyle = 'green';
+        DOM.ctx.fillRect(enemy.x - 20, enemy.y - 30, 40 * (enemy.health / 100), 5);
+    });
+    
+    // Desenhar projéteis
+    GameState.projectiles.forEach(proj => {
+        DOM.ctx.fillStyle = proj.color;
+        DOM.ctx.beginPath();
+        DOM.ctx.arc(proj.x, proj.y, 5, 0, Math.PI * 2);
+        DOM.ctx.fill();
+    });
+    
+    // Desenhar partículas
+    GameState.particles.forEach(part => {
+        DOM.ctx.fillStyle = part.color;
+        DOM.ctx.globalAlpha = part.lifetime / 60;
+        DOM.ctx.beginPath();
+        DOM.ctx.arc(part.x, part.y, 2, 0, Math.PI * 2);
+        DOM.ctx.fill();
+        DOM.ctx.globalAlpha = 1;
+    });
+    
+    // Modo debug
+    if (GameConfig.debugMode) {
+        DOM.ctx.fillStyle = 'white';
+        DOM.ctx.font = '12px Arial';
+        DOM.ctx.fillText(`X: ${GameState.player.x.toFixed(1)} Y: ${GameState.player.y.toFixed(1)}`, 10, 20);
+        DOM.ctx.fillText(`Inimigos: ${GameState.enemies.length}`, 10, 40);
+        DOM.ctx.fillText(`Projéteis: ${GameState.projectiles.length}`, 10, 60);
+    }
+}
+
+// Atirar arma
+function fireWeapon(targetX, targetY) {
+    const weapon = GameConfig.weapons[GameState.player.currentWeapon];
+    
+    if (weapon.ammo <= 0) {
+        reloadWeapon();
+        return;
+    }
+    
+    weapon.ammo--;
+    updateUI();
+    
+    // Calcular direção
+    const dx = targetX - GameState.player.x;
+    const dy = targetY - GameState.player.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    // Criar projétil
+    GameState.projectiles.push({
+        x: GameState.player.x,
+        y: GameState.player.y,
+        velocityX: (dx / distance) * 10,
+        velocityY: (dy / distance) * 10,
+        damage: weapon.damage,
+        color: '#feca57'
+    });
+    
+    // Criar efeito de recuo
+    createParticles(GameState.player.x, GameState.player.y, 3, '#feca57');
+}
+
+// Recarregar arma
+function reloadWeapon() {
+    const weapon = GameConfig.weapons[GameState.player.currentWeapon];
+    
+    if (weapon.ammo === weapon.maxAmmo) return;
+    
+    weapon.ammo = weapon.maxAmmo;
+    updateUI();
+    showNotification("Arma recarregada!");
+}
+
+// Trocar arma
+function switchWeapon(weaponType) {
+    if (GameState.player.currentWeapon !== weaponType) {
+        GameState.player.currentWeapon = weaponType;
+        updateUI();
+        showNotification(`Arma alterada para: ${GameConfig.weapons[weaponType].name}`);
+    }
+}
+
+// Criar partículas
+function createParticles(x, y, count, color) {
+    for (let i = 0; i < count; i++) {
+        GameState.particles.push({
+            x: x,
+            y: y,
+            velocityX: (Math.random() - 0.5) * 5,
+            velocityY: (Math.random() - 0.5) * 5,
+            color: color,
+            lifetime: 30 + Math.random() * 30
+        });
+    }
+}
+
+// Mostrar notificação
+function showNotification(text) {
+    DOM.notification.querySelector('.notification-text').textContent = text;
+    DOM.notification.classList.remove('hidden');
+    
+    setTimeout(() => {
+        DOM.notification.classList.add('hidden');
+    }, 3000);
+}
+
+// Iniciar missão
+function startMission(missionIndex) {
+    if (missionIndex >= GameConfig.missions.length) return;
+    
+    GameState.currentMission = missionIndex;
+    const mission = GameConfig.missions[missionIndex];
+    
+    DOM.missionDisplay.textContent = mission.description;
+    showNotification(`Nova missão: ${mission.title}`);
+    
+    // Gerar inimigos baseado na missão
+    if (missionIndex === 1) {
+        spawnEnemies(5);
+    }
+}
+
+// Atualizar progresso da missão
+function updateMissionProgress(type) {
+    const mission = GameConfig.missions[GameState.currentMission];
+    
+    switch(type) {
+        case 'enemyDefeated':
+            if (GameState.currentMission === 1) {
+                const objective = mission.objectives[0];
+                objective.progress++;
+                
+                if (objective.progress >= objective.target) {
+                    objective.completed = true;
+                    completeMission();
+                }
+            }
+            break;
+    }
+}
+
+// Completar missão
+function completeMission() {
+    const mission = GameConfig.missions[GameState.currentMission];
+    
+    showNotification(`Missão completada: ${mission.title}`);
+    GameState.player.xp += mission.xpReward;
+    
+    // Verificar level up
+    checkLevelUp();
+    
+    // Iniciar próxima missão
+    startMission(GameState.currentMission + 1);
+}
+
+// Verificar level up
+function checkLevelUp() {
+    const xpNeeded = GameState.player.level * 1000;
+    
+    if (GameState.player.xp >= xpNeeded) {
+        GameState.player.level++;
+        GameState.player.xp -= xpNeeded;
+        showNotification(`Level Up! Novo nível: ${GameState.player.level}`);
+    }
+}
+
+// Gerar inimigos
+function spawnEnemies(count) {
+    for (let i = 0; i < count; i++) {
+        const x = Math.random() * GameConfig.canvasWidth;
+        const y = Math.random() * GameConfig.canvasHeight * 0.7;
+        
+        GameState.enemies.push({
+            x: x,
+            y: y,
+            health: 100,
+            speed: 1 + Math.random() * 2
+        });
+    }
+}
+
+// Iniciar diálogo
+function startDialogue(speaker, text, options) {
+    document.getElementById('dialogue-speaker').textContent = speaker;
+    document.getElementById('dialogue-text').textContent = text;
+    
+    const optionsContainer = document.getElementById('dialogue-options');
+    optionsContainer.innerHTML = '';
+    
+    options.forEach(option => {
+        const btn = document.createElement('div');
+        btn.className = 'dialogue-option';
+        btn.textContent = option.text;
+        btn.addEventListener('click', option.action);
+        optionsContainer.appendChild(btn);
+    });
+    
+    DOM.dialogueBox.classList.remove('hidden');
+}
+
+// Fechar diálogo
+function closeDialogue() {
+    DOM.dialogueBox.classList.add('hidden');
+}
+
+// Inicializar o jogo quando a página carregar
+window.addEventListener('load', initGame);
