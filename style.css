@@ -6,7 +6,7 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
-    font-family: 'Courier New', monospace;
+    font-family: 'Arial', sans-serif;
 }
 
 #game-container {
@@ -14,19 +14,38 @@ body {
 }
 
 #game-canvas {
-    border: 2px solid #0ff;
-    box-shadow: 0 0 20px #0ff, 0 0 40px #0ff;
+    background: #000 url('assets/space-bg.jpg') no-repeat;
+    background-size: cover;
+    border: 2px solid #4af;
+    box-shadow: 0 0 20px #4af;
 }
 
 #hud {
     position: absolute;
     top: 10px;
     left: 10px;
-    color: #0ff;
+    color: #4af;
     font-size: 18px;
-    text-shadow: 0 0 5px #0ff;
+    text-shadow: 0 0 5px #4af;
 }
 
-#score, #health {
+#score, #health, #level {
     margin: 5px;
+}
+
+#game-over {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #f44;
+    font-size: 48px;
+    text-align: center;
+    text-shadow: 0 0 10px #f44;
+    display: none;
+}
+
+#game-over span {
+    font-size: 24px;
+    color: #fff;
 }
