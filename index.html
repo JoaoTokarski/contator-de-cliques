@@ -1,36 +1,19 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Galactic Odyssey</title>
+    <title>Neon Vengeance</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="game-container">
         <canvas id="game-canvas"></canvas>
-        
         <div id="hud">
-            <div class="health-bar">
-                <div class="health-fill" id="health-bar"></div>
-            </div>
-            <div class="ammo-display" id="ammo-display">Munição: ∞</div>
-            <div class="mission-display" id="mission-display">Elimine os aliens: 0/10</div>
-        </div>
-        
-        <div id="main-menu">
-            <h1 class="menu-title">GALACTIC ODYSSEY</h1>
-            <button class="menu-btn" id="start-btn">INICIAR MISSÃO</button>
-            <button class="menu-btn" id="howto-btn">COMO JOGAR</button>
-        </div>
-
-        <div id="game-over" class="hidden">
-            <h2>MISSÃO FALHOU</h2>
-            <p id="game-over-text">Você eliminou 0 aliens</p>
-            <button class="menu-btn" id="restart-btn">TENTAR NOVAMENTE</button>
+            <div id="score">Score: 0</div>
+            <div id="health">Health: 100%</div>
         </div>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
