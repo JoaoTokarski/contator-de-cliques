@@ -3,32 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Space Shooter Arcade</title>
+    <title>Space Shooter Arcade Pro</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="game-container">
-        <h1>Space Shooter Arcade</h1>
+        <h1>Space Shooter Arcade Pro</h1>
         <div id="menu">
             <button id="start-btn">Iniciar Jogo</button>
             <button id="restart-btn" style="display: none;">Jogar Novamente</button>
+            <button id="highscores-btn">Recordes</button>
+            <div id="controls-info">
+                <p>Controles: Setas/WASD para mover, Espaço/X para atirar</p>
+            </div>
         </div>
         <canvas id="game-canvas"></canvas>
         <div id="hud">
             <div>Pontuação: <span id="score">0</span></div>
             <div>Vidas: <span id="lives">3</span></div>
             <div>Fase: <span id="level">1</span></div>
+            <div>Arma: <span id="weapon">Básica</span></div>
             <div>Inimigos: <span id="enemies-remaining">0</span></div>
         </div>
         <div id="game-over" class="hidden">
             <h2>Game Over</h2>
             <p>Sua pontuação final: <span id="final-score">0</span></p>
+            <div id="new-highscore" class="hidden">
+                <p>Novo recorde!</p>
+                <input type="text" id="player-name" placeholder="Digite seu nome" maxlength="10">
+                <button id="save-score">Salvar</button>
+            </div>
         </div>
         <div id="level-complete" class="hidden">
             <h2>Fase Completa!</h2>
             <p>Preparando próxima fase...</p>
+            <p>Pontuação bônus: <span id="bonus-score">0</span></p>
+        </div>
+        <div id="highscores-screen" class="hidden">
+            <h2>Recordes</h2>
+            <ol id="highscores-list"></ol>
+            <button id="back-to-menu">Voltar</button>
         </div>
     </div>
+    <audio id="game-music" loop>
+        <source src="assets/sounds/game-music.mp3" type="audio/mpeg">
+    </audio>
     <script src="script.js"></script>
 </body>
 </html>

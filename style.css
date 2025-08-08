@@ -1,14 +1,20 @@
+/* Estilos base */
 body {
     margin: 0;
     padding: 0;
     background-color: #000;
     color: #fff;
-    font-family: 'Arial', sans-serif;
+    font-family: 'Press Start 2P', 'Arial', sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
     overflow: hidden;
+}
+
+@font-face {
+    font-family: 'Press Start 2P';
+    src: url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 }
 
 #game-container {
@@ -20,72 +26,180 @@ body {
 
 h1 {
     color: #4af;
-    text-shadow: 0 0 10px #4af;
+    text-shadow: 0 0 10px #4af, 0 0 20px #4af;
     margin-bottom: 20px;
+    font-size: 28px;
 }
 
 #game-canvas {
     background-color: #000;
-    border: 2px solid #4af;
-    box-shadow: 0 0 20px #4af;
+    border: 3px solid #4af;
+    box-shadow: 0 0 30px #4af, 0 0 60px rgba(68, 170, 255, 0.3);
 }
 
+/* Menu e botões */
 #menu {
     margin: 20px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
 }
 
 button {
     background-color: #4af;
     color: #000;
     border: none;
-    padding: 10px 20px;
+    padding: 12px 24px;
     font-size: 16px;
     cursor: pointer;
     border-radius: 5px;
     margin: 0 10px;
     transition: all 0.3s;
+    font-family: 'Press Start 2P', cursive;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 button:hover {
     background-color: #6cf;
     transform: scale(1.05);
+    box-shadow: 0 0 15px #6cf;
 }
 
+#controls-info {
+    margin-top: 10px;
+    color: #8f8;
+    font-size: 14px;
+}
+
+/* HUD */
 #hud {
     display: flex;
     justify-content: space-around;
-    margin-top: 10px;
+    margin-top: 15px;
     color: #4af;
-    font-size: 18px;
+    font-size: 16px;
+    text-shadow: 0 0 5px #4af;
+    background-color: rgba(0, 0, 50, 0.5);
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #4af;
 }
 
-#game-over, #level-complete {
+/* Telas de jogo */
+#game-over, #level-complete, #highscores-screen {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: rgba(0, 0, 0, 0.8);
-    padding: 20px;
-    border-radius: 10px;
-    border: 2px solid #f44;
+    background-color: rgba(0, 0, 30, 0.9);
+    padding: 30px;
+    border-radius: 15px;
     text-align: center;
     z-index: 100;
+    width: 70%;
+    max-width: 500px;
+}
+
+#game-over {
+    border: 3px solid #f44;
+    box-shadow: 0 0 30px #f44;
 }
 
 #level-complete {
-    border: 2px solid #4af;
+    border: 3px solid #4af;
+    box-shadow: 0 0 30px #4af;
+}
+
+#highscores-screen {
+    border: 3px solid #8f0;
+    box-shadow: 0 0 30px #8f0;
+}
+
+#game-over h2 {
+    color: #f44;
+    text-shadow: 0 0 10px #f44;
+    font-size: 32px;
+    margin-bottom: 20px;
+}
+
+#level-complete h2 {
+    color: #4af;
+    text-shadow: 0 0 10px #4af;
+    font-size: 32px;
+    margin-bottom: 20px;
+}
+
+#highscores-screen h2 {
+    color: #8f0;
+    text-shadow: 0 0 10px #8f0;
+    font-size: 32px;
+    margin-bottom: 20px;
 }
 
 .hidden {
     display: none;
 }
 
-#game-over h2 {
-    color: #f44;
-    text-shadow: 0 0 10px #f44;
+/* Novo recorde */
+#new-highscore {
+    margin-top: 20px;
 }
 
-#level-complete h2 {
-    color: #4af;
-    text-shadow: 0 0 10px #4af;
+#player-name {
+    margin: 10px 0;
+    padding: 8px;
+    font-size: 16px;
+    width: 80%;
+    text-align: center;
+    background-color: rgba(255, 255, 255, 0.2);
+    border: 1px solid #4af;
+    color: white;
+}
+
+#highscores-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 20px 0;
+    text-align: left;
+}
+
+#highscores-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #4af;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* Efeitos de transição */
+.fade-in {
+    animation: fadeIn 0.5s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Responsividade */
+@media (max-width: 850px) {
+    #game-container {
+        width: 100%;
+        height: 100%;
+    }
+    
+    #game-canvas {
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+    
+    h1 {
+        font-size: 20px;
+    }
+    
+    #hud {
+        font-size: 12px;
+    }
 }
