@@ -3,18 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Space Shooter</title>
+    <title>Space Shooter Arcade</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="game-container">
+        <h1>Space Shooter Arcade</h1>
+        <div id="menu">
+            <button id="start-btn">Iniciar Jogo</button>
+            <button id="restart-btn" style="display: none;">Jogar Novamente</button>
+        </div>
         <canvas id="game-canvas"></canvas>
         <div id="hud">
-            <div id="score">Score: 0</div>
-            <div id="health">Health: 100%</div>
-            <div id="level">Level: 1</div>
+            <div>Pontuação: <span id="score">0</span></div>
+            <div>Vidas: <span id="lives">3</span></div>
+            <div>Fase: <span id="level">1</span></div>
+            <div>Inimigos: <span id="enemies-remaining">0</span></div>
         </div>
-        <div id="game-over">GAME OVER<br><span>Press R to restart</span></div>
+        <div id="game-over" class="hidden">
+            <h2>Game Over</h2>
+            <p>Sua pontuação final: <span id="final-score">0</span></p>
+        </div>
+        <div id="level-complete" class="hidden">
+            <h2>Fase Completa!</h2>
+            <p>Preparando próxima fase...</p>
+        </div>
     </div>
     <script src="script.js"></script>
 </body>
