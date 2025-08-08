@@ -151,11 +151,26 @@ function setupEventListeners() {
     // Teclado
     document.addEventListener('keydown', (e) => {
         switch(e.key.toLowerCase()) {
-            case 'w': case 'arrowup': GameState.keys.w = true; break;
-            case 'a': case 'arrowleft': GameState.keys.a = true; break;
-            case 's': case 'arrowdown': GameState.keys.s = true; break;
-            case 'd': case 'arrowright': GameState.keys.d = true; break;
-            case ' ': GameState.keys.space = true; break;
+            case 'w':
+            case 'arrowup': 
+                GameState.keys.w = true;
+                if (!GameState.player.isJumping && !GameState.player.isFalling) {
+                    GameState.player.isJumping = true;
+                    GameState.player.velocityY = -GameConfig.player.jumpForce;
+                }
+                break;
+            case 'a':
+            case 'arrowleft': GameState.keys.a = true; break;
+            case 's':
+            case 'arrowdown': GameState.keys.s = true; break;
+            case 'd':
+            case 'arrowright': GameState.keys.d = true; break;
+            case ' ': 
+                if (!GameState.player.isJumping && !GameState.player.isFalling) {
+                    GameState.player.isJumping = true;
+                    GameState.player.velocityY = -GameConfig.player.jumpForce;
+                }
+                break;
             case 'shift': GameState.keys.shift = true; break;
             case 'escape': togglePause(); break;
             case 'r': reloadWeapon(); break;
@@ -166,10 +181,14 @@ function setupEventListeners() {
     
     document.addEventListener('keyup', (e) => {
         switch(e.key.toLowerCase()) {
-            case 'w': case 'arrowup': GameState.keys.w = false; break;
-            case 'a': case 'arrowleft': GameState.keys.a = false; break;
-            case 's': case 'arrowdown': GameState.keys.s = false; break;
-            case 'd': case 'arrowright': GameState.keys.d = false; break;
+            case 'w':
+            case 'arrowup': GameState.keys.w = false; break;
+            case 'a':
+            case 'arrowleft': GameState.keys.a = false; break;
+            case 's':
+            case 'arrowdown': GameState.keys.s = false; break;
+            case 'd':
+            case 'arrowright': GameState.keys.d = false; break;
             case ' ': GameState.keys.space = false; break;
             case 'shift': GameState.keys.shift = false; break;
         }
@@ -269,6 +288,7 @@ function resetGameState() {
         velocityX: 0,
         velocityY: 0,
         isJumping: false,
+        isFalling: false,
         health: GameConfig.player.health,
         shield: GameConfig.player.shield,
         xp: 0,
@@ -343,13 +363,8 @@ function updatePhysics(deltaTime) {
     if (GameState.keys.a) GameState.player.velocityX = -playerSpeed;
     if (GameState.keys.d) GameState.player.velocityX = playerSpeed;
     
-    if (GameState.keys.w && !GameState.player.isJumping) {
-        GameState.player.velocityY = -GameConfig.player.jumpForce;
-        GameState.player.isJumping = true;
-    }
-    
     // Aplicar gravidade
-    GameState.player.velocityY += 0.5;
+    GameState.player.velocityY += GameConfig.gravity;
     
     // Atualizar posição
     GameState.player.x += GameState.player.velocityX;
@@ -358,10 +373,16 @@ function updatePhysics(deltaTime) {
     // Limites do canvas
     if (GameState.player.x < 0) GameState.player.x = 0;
     if (GameState.player.x > GameConfig.canvasWidth) GameState.player.x = GameConfig.canvasWidth;
-    if (GameState.player.y > GameConfig.canvasHeight - 50) {
-        GameState.player.y = GameConfig.canvasHeight - 50;
-        GameState.player.isJumping = false;
+    
+    // Verificar colisão com o chão
+    const groundLevel = GameConfig.canvasHeight - 100;
+    if (GameState.player.y > groundLevel) {
+        GameState.player.y = groundLevel;
         GameState.player.velocityY = 0;
+        GameState.player.isJumping = false;
+        GameState.player.isFalling = false;
+    } else if (GameState.player.velocityY > 0) {
+        GameState.player.isFalling = true;
     }
 }
 
@@ -375,6 +396,7 @@ function updateEntities(deltaTime) {
         // Verificar se saiu da tela
         if (proj.x < 0 || proj.x > GameConfig.canvasWidth || 
             proj.y < 0 || proj.y > GameConfig.canvasHeight) {
+            proj.element.remove();
             GameState.projectiles.splice(index, 1);
         }
     });
@@ -387,51 +409,41 @@ function updateEntities(deltaTime) {
         const distance = Math.sqrt(dx * dx + dy * dy);
         
         if (distance > 200) {
+            // Move na direção geral do jogador
             enemy.x += (dx / distance) * enemy.speed * deltaTime * 60;
             enemy.y += (dy / distance) * enemy.speed * deltaTime * 60;
         }
         
-        // Verificar colisão com projéteis
-        GameState.projectiles.forEach((proj, projIndex) => {
-            const projDx = proj.x - enemy.x;
-            const projDy = proj.y - enemy.y;
-            const projDist = Math.sqrt(projDx * projDx + projDy * projDy);
-            
-            if (projDist < 30) { // Raio de colisão
-                enemy.health -= proj.damage;
-                GameState.projectiles.splice(projIndex, 1);
-                
-                // Criar efeito de partícula
-                createParticles(enemy.x, enemy.y, 5, 'red');
-                
-                if (enemy.health <= 0) {
-                    GameState.enemies.splice(index, 1);
-                    createParticles(enemy.x, enemy.y, 20, 'orange');
-                    
-                    // Atualizar missão se necessário
-                    updateMissionProgress('enemyDefeated');
-                }
-            }
-        });
-    });
-    
-    // Atualizar partículas
-    GameState.particles.forEach((part, index) => {
-        part.x += part.velocityX;
-        part.y += part.velocityY;
-        part.lifetime--;
+        enemy.element.style.left = `${enemy.x}px`;
+        enemy.element.style.top = `${enemy.y}px`;
         
-        if (part.lifetime <= 0) {
-            GameState.particles.splice(index, 1);
+        // Remover se sair da tela
+        if (enemy.x < -100 || enemy.x > GameConfig.canvasWidth + 100 ||
+            enemy.y < -100 || enemy.y > GameConfig.canvasHeight + 100) {
+            enemy.element.remove();
+            GameState.enemies.splice(index, 1);
         }
     });
 }
 
 // Renderizar cena
 function render() {
+    // Desenhar fundo estelar
+    DOM.ctx.fillStyle = '#000033';
+    DOM.ctx.fillRect(0, 0, GameConfig.canvasWidth, GameConfig.canvasHeight);
+    
+    // Desenhar estrelas
+    DOM.ctx.fillStyle = 'white';
+    for (let i = 0; i < 100; i++) {
+        const x = Math.random() * GameConfig.canvasWidth;
+        const y = Math.random() * GameConfig.canvasHeight;
+        const size = Math.random() * 2;
+        DOM.ctx.fillRect(x, y, size, size);
+    }
+    
     // Desenhar terreno (simplificado)
     DOM.ctx.fillStyle = '#2a2a4a';
-    DOM.ctx.fillRect(0, GameConfig.canvasHeight - 50, GameConfig.canvasWidth, 50);
+    DOM.ctx.fillRect(0, GameConfig.canvasHeight - 100, GameConfig.canvasWidth, 100);
     
     // Desenhar jogador (simplificado)
     DOM.ctx.fillStyle = '#00a8ff';
@@ -461,16 +473,6 @@ function render() {
         DOM.ctx.fill();
     });
     
-    // Desenhar partículas
-    GameState.particles.forEach(part => {
-        DOM.ctx.fillStyle = part.color;
-        DOM.ctx.globalAlpha = part.lifetime / 60;
-        DOM.ctx.beginPath();
-        DOM.ctx.arc(part.x, part.y, 2, 0, Math.PI * 2);
-        DOM.ctx.fill();
-        DOM.ctx.globalAlpha = 1;
-    });
-    
     // Modo debug
     if (GameConfig.debugMode) {
         DOM.ctx.fillStyle = 'white';
@@ -483,6 +485,7 @@ function render() {
 
 // Atirar arma
 function fireWeapon(targetX, targetY) {
+    const now = Date.now();
     const weapon = GameConfig.weapons[GameState.player.currentWeapon];
     
     if (weapon.ammo <= 0) {
@@ -499,7 +502,14 @@ function fireWeapon(targetX, targetY) {
     const distance = Math.sqrt(dx * dx + dy * dy);
     
     // Criar projétil
+    const projectile = document.createElement('div');
+    projectile.className = 'projectile';
+    projectile.style.left = `${GameState.player.x}px`;
+    projectile.style.top = `${GameState.player.y}px`;
+    document.getElementById('game-container').appendChild(projectile);
+    
     GameState.projectiles.push({
+        element: projectile,
         x: GameState.player.x,
         y: GameState.player.y,
         velocityX: (dx / distance) * 10,
@@ -509,7 +519,7 @@ function fireWeapon(targetX, targetY) {
     });
     
     // Criar efeito de recuo
-    createParticles(GameState.player.x, GameState.player.y, 3, '#feca57');
+    GameState.player.x -= Math.cos(Math.atan2(dy, dx)) * 5;
 }
 
 // Recarregar arma
@@ -529,20 +539,6 @@ function switchWeapon(weaponType) {
         GameState.player.currentWeapon = weaponType;
         updateUI();
         showNotification(`Arma alterada para: ${GameConfig.weapons[weaponType].name}`);
-    }
-}
-
-// Criar partículas
-function createParticles(x, y, count, color) {
-    for (let i = 0; i < count; i++) {
-        GameState.particles.push({
-            x: x,
-            y: y,
-            velocityX: (Math.random() - 0.5) * 5,
-            velocityY: (Math.random() - 0.5) * 5,
-            color: color,
-            lifetime: 30 + Math.random() * 30
-        });
     }
 }
 
@@ -572,57 +568,21 @@ function startMission(missionIndex) {
     }
 }
 
-// Atualizar progresso da missão
-function updateMissionProgress(type) {
-    const mission = GameConfig.missions[GameState.currentMission];
-    
-    switch(type) {
-        case 'enemyDefeated':
-            if (GameState.currentMission === 1) {
-                const objective = mission.objectives[0];
-                objective.progress++;
-                
-                if (objective.progress >= objective.target) {
-                    objective.completed = true;
-                    completeMission();
-                }
-            }
-            break;
-    }
-}
-
-// Completar missão
-function completeMission() {
-    const mission = GameConfig.missions[GameState.currentMission];
-    
-    showNotification(`Missão completada: ${mission.title}`);
-    GameState.player.xp += mission.xpReward;
-    
-    // Verificar level up
-    checkLevelUp();
-    
-    // Iniciar próxima missão
-    startMission(GameState.currentMission + 1);
-}
-
-// Verificar level up
-function checkLevelUp() {
-    const xpNeeded = GameState.player.level * 1000;
-    
-    if (GameState.player.xp >= xpNeeded) {
-        GameState.player.level++;
-        GameState.player.xp -= xpNeeded;
-        showNotification(`Level Up! Novo nível: ${GameState.player.level}`);
-    }
-}
-
-// Gerar inimigos
+// Spawn de inimigos
 function spawnEnemies(count) {
     for (let i = 0; i < count; i++) {
+        const enemy = document.createElement('div');
+        enemy.className = 'enemy';
+        
         const x = Math.random() * GameConfig.canvasWidth;
         const y = Math.random() * GameConfig.canvasHeight * 0.7;
         
+        enemy.style.left = `${x}px`;
+        enemy.style.top = `${y}px`;
+        document.getElementById('game-container').appendChild(enemy);
+        
         GameState.enemies.push({
+            element: enemy,
             x: x,
             y: y,
             health: 100,
